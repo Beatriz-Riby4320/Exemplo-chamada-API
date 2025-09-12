@@ -9,6 +9,12 @@ interface Post {
   title: string;
   body: string;
 }
+// Define a tipagem para os objetos de usuário que virão da API
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
 
 
 // Componente principal da aplicação
@@ -19,30 +25,50 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   // Estado para armazenar qualquer erro que possa ocorrer na chamada da API
   const [error, setError] = useState<string | null>(null);
+// Estado para armazenar a lista de usuários
+  const [users, setUsers] = useState<User[]>([]);
+ 
 
   // useEffect é usado para executar efeitos colaterais em componentes funcionais.
+  // Aqui, ele é usado para buscar os posts e usuários da API quando o componente é montado.
   useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        const response = await fetch('https://jsonplaceholder.typicode.com/posts/?userId=8');
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data: Post[] = await response.json();
-        setPosts(data);
-      } catch (e) {
-        if (e instanceof Error) {
-            setError(e.message);
-        } else {
-            setError('Ocorreu um erro desconhecido');
-        }
-      } finally {
-        setLoading(false);
+    const fetchData = async () => {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      const [postsResponse, usersResponse] = await Promise.all([
+        fetch('https://jsonplaceholder.typicode.com/posts'),
+        fetch('https://jsonplaceholder.typicode.com/users')
+      ]);
+
+      if (!postsResponse.ok || !usersResponse.ok) {
+        throw new Error('Erro ao buscar dados');
       }
-    };
-    fetchPosts();
-  }, []);
+
+      const postsData: Post[] = await postsResponse.json();
+      const usersData: User[] = await usersResponse.json();
+
+      setPosts(postsData);
+      setUsers(usersData);
+    } catch (e) {
+      if (e instanceof Error) {
+        setError(e.message);
+      } else {
+        setError('Ocorreu um erro desconhecido');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchData();
+}, []);
+   
+// Função para obter o nome e email do usuário pelo ID
+  const getUserInfo = (userId: number) => {
+  const user = users.find(u => u.id === userId);
+  return user ? `${user.name} (${user.email})` : `Usuário ${userId}`;
+};
 
   if (loading) {
     return (
@@ -76,8 +102,10 @@ const App: React.FC = () => {
                 <p className="post-body">
                   {post.body}
                 </p>
+                {/*Exibe o nome e email do autor do post*/}
+                {/* comentários dentro do retorno do JSX precisam estar entre chaves */}
                 <span className="user-id-badge">
-                  User ID: {post.userId}
+                  Autor: {getUserInfo(post.userId)}
                 </span>
               </div>
             ))}
@@ -87,6 +115,7 @@ const App: React.FC = () => {
     </>
   );
 };
+
 
 export default App;
 
