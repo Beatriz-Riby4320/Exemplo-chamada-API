@@ -127,6 +127,12 @@ const App: React.FC = () => {
                       </ul>
                     </>
                   )}
+                  <img
+                    src={`https://picsum.photos/400/200?random=${post.id}`}
+                    alt="Imagem aleatória"
+                    className="post-image"
+                    style={{ width: '100%', marginTop: '1rem', borderRadius: '8px' }}
+                  />
                 </div>
               );
             })}
