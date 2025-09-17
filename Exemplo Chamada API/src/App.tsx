@@ -3,6 +3,7 @@ import './App.css';
 
 // Define a tipagem para os objetos de post que virão da API
 // Isso ajuda a evitar erros e melhora a autocompletação do código.
+
 interface Post {
   id: number;
   userId: number;
@@ -15,6 +16,15 @@ interface User {
   name: string;
   email: string;
 }
+interface comments {
+  postId: number;
+  id: number;
+  name: string;
+  email: string;
+  body: string;
+}
+
+
 
 
 // Componente principal da aplicação
@@ -27,17 +37,20 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 // Estado para armazenar a lista de usuários
   const [users, setUsers] = useState<User[]>([]);
+// Estado para armazenar a lista de comentários
+  const [comments, setComments] = useState<comments[]>([]);
  
 
   // useEffect é usado para executar efeitos colaterais em componentes funcionais.
-  // Aqui, ele é usado para buscar os posts e usuários da API quando o componente é montado.
+  // Aqui, ele é usado para buscar os posts, usuários e comentários da API quando o componente é montado.
   useEffect(() => {
     const fetchData = async () => {
     try {
       await new Promise(resolve => setTimeout(resolve, 2000));
 
-      const [postsResponse, usersResponse] = await Promise.all([
+      const [postsResponse, commentsResponse, usersResponse] = await Promise.all([
         fetch('https://jsonplaceholder.typicode.com/posts'),
+        fetch('https://jsonplaceholder.typicode.com/comments'),
         fetch('https://jsonplaceholder.typicode.com/users')
       ]);
 
@@ -46,10 +59,14 @@ const App: React.FC = () => {
       }
 
       const postsData: Post[] = await postsResponse.json();
+      const commentsData: comments[] = await commentsResponse.json();
       const usersData: User[] = await usersResponse.json();
 
+      setComments(commentsData);
       setPosts(postsData);
       setUsers(usersData);
+      setError(null);
+
     } catch (e) {
       if (e instanceof Error) {
         setError(e.message);
@@ -64,11 +81,7 @@ const App: React.FC = () => {
   fetchData();
 }, []);
    
-// Função para obter o nome e email do usuário pelo ID
-  const getUserInfo = (userId: number) => {
-  const user = users.find(u => u.id === userId);
-  return user ? `${user.name} (${user.email})` : `Usuário ${userId}`;
-};
+// Renderização condicional baseada no estado de carregamento e erro
 
   if (loading) {
     return (
@@ -93,29 +106,36 @@ const App: React.FC = () => {
           <h1 className="main-title">
             Blog Posts - JSONPlaceholder
           </h1>
-          <div className="posts-grid">
-            {posts.map((post) => (
-              <div key={post.id} className="post-card">
-                <h2 className="post-title">
-                  {post.title}
-                </h2>
-                <p className="post-body">
-                  {post.body}
-                </p>
-                {/*Exibe o nome e email do autor do post*/}
-                {/* comentários dentro do retorno do JSX precisam estar entre chaves */}
-                <span className="user-id-badge">
-                  Autor: {getUserInfo(post.userId)}
-                </span>
-              </div>
-            ))}
+          <div className="text-columns">
+            {posts.map((post) => {
+              const user = users.find(u => u.id === post.userId);
+              const postComments = comments.filter(comment => comment.postId === post.id);
+              return (
+                <div key={post.id} className="post-text-block">
+                  <span className="post-author">{user?.name} diz:</span>
+                  <span className="post-title">{post.title}</span>
+                  <span className="post-body">{post.body}</span>
+                  {postComments.length > 0 && (
+                    <>
+                      <div className="comments-title">Comentários</div>
+                      <ul className="comments-list">
+                        {postComments.map((comment) => (
+                          <li key={comment.id}>
+                            <strong>{comment.name}</strong>: {comment.body}
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
     </>
   );
-};
-
+}
 
 export default App;
 
